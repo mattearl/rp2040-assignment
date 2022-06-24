@@ -1,37 +1,49 @@
 # rp2040-assignment
-Firmware demonstration for an [Adafruit Feather RP2040](https://www.adafruit.com/product/4884) connected to 
-an [SSD1306](https://www.adafruit.com/product/938) OLED display and an 
-[MPU6050](https://www.adafruit.com/product/3886) 6-axis IMU via 
-[STEMMA QT cables](https://www.adafruit.com/product/4399).
 
-## Running the firmware
+The code in this repository implements the game SmallBall on an
+[Adafruit Feather RP2040](https://www.adafruit.com/product/4884) 
+connected to an [SSD1306](https://www.adafruit.com/product/938) 
+OLED display and an [MPU6050](https://www.adafruit.com/product/3886) 
+6-axis IMU via [STEMMA QT cables](https://www.adafruit.com/product/4399). 
+The pitch and roll measurements from the IMU are the game control inputs. 
 
-1.) Install the RP2040 rust target 
+SmallBall is a game where you control a small ball on a small screen via an 
+IMU sensor. The goal is to move the ball around the screen to visit all goals 
+on the screen in the minimum amount of time. The game keeps track of the
+lowest score achieved.
+
+## Running the game on the RP2040 
+1.) Prepare the hardware by connecting the display and the IMU to the RP2040 via STEMMA QT cables.
+
+2.) Install the RP2040 rust target 
 ```
 rustup target add thumbv6m-none-eabi
 ```
 
-2.) Install elf2uf2-rs, which is used to depoly the firmware to the RP2040 by converting the
+3.) Install elf2uf2-rs, which is used to deploy the firmware to the RP2040 by converting the
 elf file produced by the rust build to uf2 format and then copying the uf2 file to the hardware.
 ```
 cargo install elf2uf2-rs
 ```
 
-3.) Clone this repository
+4.) Clone this repository
 ```
 git clone https://github.com/mattearl/rp2040-assignment.git
 cd rp2040-assignment
 ``` 
 
-4.) Boot the board into bootloader mode by holding down the BOOTSEL button while plugging the 
+5.) Boot the board into bootloader mode by holding down the BOOTSEL button while plugging the 
 board into the USB port (the board will appear as a USB disk drive).
 
-5.) Build the firmware and flash the hardware
+6.) Build the firmware and flash the hardware
 ```
 cargo run --release
 ``` 
 
-6.) The dispaly shoudl show graphics and you can use the mpu to provide input.
+7.) You will see the game splash screen. After a short wait the game will start and you can play 
+by rolling and pitching the IMU to move the ball around the screen to visit each goal as quickly
+as possible. Once all goals are reached you will see the game over screen that shows your score
+and the lowest score achieved. After a short wait the game will start again.  
 
 ## Troubleshooting
 
