@@ -58,7 +58,7 @@ pub enum Mode {
 }
 
 /// The Ball is the entity that the user controls on the screen
-/// trying to visit goals as quickly as possible. 
+/// trying to visit goals as quickly as possible.
 pub struct Ball {
     /// the current location of this ball
     location: Point,
