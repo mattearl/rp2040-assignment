@@ -1,6 +1,8 @@
 //!
-//! Firmware demonstration for an Adafruit Feather RP2040 connected to an
-//! SSD1306 OLED display and an MPU6050 6-axis IMU via STEMMA QT cables.
+//! This file implements the game SmallBall (see smallball.rs for details) on an
+//! Adafruit Feather RP2040 connected to an SSD1306 OLED display and an MPU6050
+//! 6-axis IMU via STEMMA QT cables. The pitch and roll measurements from the IMU
+//! are the game control inputs.  
 //!
 
 #![no_std]
@@ -11,10 +13,9 @@ use core::fmt::Write;
 use cortex_m_rt::entry;
 use embedded_graphics::pixelcolor::BinaryColor;
 use embedded_graphics::{
-    image::{Image, ImageRaw},
     mono_font::{ascii::FONT_6X10, MonoTextStyleBuilder},
     prelude::{Point, Primitive, Size},
-    primitives::{Circle, PrimitiveStyleBuilder, Rectangle, Triangle},
+    primitives::{Circle, PrimitiveStyleBuilder, Rectangle},
     text::{Baseline, Text},
     Drawable,
 };
@@ -25,12 +26,15 @@ use heapless::String;
 use mpu6050::Mpu6050;
 use panic_halt as _;
 use rp2040_hal as hal;
+use smallball::{Mode, State};
 use ssd1306::{
     mode::DisplayConfig, rotation::DisplayRotation, size::DisplaySize128x64, I2CDisplayInterface,
     Ssd1306,
 };
 
-/// Entry point to our bare-metal application.
+mod math;
+mod smallball;
+
 #[entry]
 fn main() -> ! {
     let mut pac = pac::Peripherals::take().unwrap();
@@ -52,6 +56,7 @@ fn main() -> ! {
     .ok()
     .unwrap();
 
+    // Configure delay to be used for waiting
     let mut delay = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().integer());
 
     // The single-cycle I/O block controls our GPIO pins
@@ -65,9 +70,9 @@ fn main() -> ! {
         &mut pac.RESETS,
     );
 
-    // Configure two pins as being I2C, not GPIO. From the datasheet for the Feather RP2040
-    // we see that GPIO2 and GPIO3 are the SDA and SCL pins, respectively, attached to the
-    // JST SH 4-pin connector and cable we are using to connect the hardware.
+    // Configure two pins as being I2C, not GPIO. From the datasheet for the Feather RP2040,
+    // pins GPIO2 and GPIO3 are the SDA and SCL pins, respectively, attached to the JST SH 4-pin
+    // connector and cable we are using to connect the hardware.
     let sda_pin = pins.gpio2.into_mode::<hal::gpio::FunctionI2C>();
     let scl_pin = pins.gpio3.into_mode::<hal::gpio::FunctionI2C>();
 
@@ -102,100 +107,145 @@ fn main() -> ! {
         .text_color(BinaryColor::On)
         .build();
 
-    let draw_mode = 2;
-    match draw_mode {
-        0 => {
-            let raw: ImageRaw<BinaryColor> = ImageRaw::new(include_bytes!("./rust.raw"), 64);
-            let im = Image::new(&raw, Point::new(32, 0));
-            im.draw(&mut display).unwrap();
-        }
-        1 => {
-            Text::with_baseline("Hello world!", Point::zero(), text_style, Baseline::Top)
-                .draw(&mut display)
-                .unwrap();
-            Text::with_baseline("Hello Rust!", Point::new(0, 16), text_style, Baseline::Top)
-                .draw(&mut display)
-                .unwrap();
-        }
-        2 => {
-            let yoffset = 20;
+    // Set the style for drawing shapes
+    let style = PrimitiveStyleBuilder::new()
+        .stroke_width(1)
+        .stroke_color(BinaryColor::On)
+        .build();
 
-            let style = PrimitiveStyleBuilder::new()
-                .stroke_width(1)
-                .stroke_color(BinaryColor::On)
-                .build();
-
-            // screen outline
-            // default display size is 128x64 if you don't pass a _DisplaySize_
-            // enum to the _Builder_ struct
-            Rectangle::new(Point::new(0, 0), Size::new(127, 63))
-                .into_styled(style)
-                .draw(&mut display)
-                .unwrap();
-
-            // triangle
-            Triangle::new(
-                Point::new(16, 16 + yoffset),
-                Point::new(16 + 16, 16 + yoffset),
-                Point::new(16 + 8, yoffset),
-            )
-            .into_styled(style)
-            .draw(&mut display)
-            .unwrap();
-
-            // square
-            Rectangle::new(Point::new(52, yoffset), Size::new_equal(16))
-                .into_styled(style)
-                .draw(&mut display)
-                .unwrap();
-
-            // circle
-            Circle::new(Point::new(88, yoffset), 16)
-                .into_styled(style)
-                .draw(&mut display)
-                .unwrap();
-        }
-        _ => (),
-    }
-
-    display.flush().unwrap();
-
+    // get the led pin for blinking
     let mut led_pin = pins.gpio13.into_push_pull_output();
 
-    delay.delay_ms(5000);
+    // initialize the SmallBall game state
+    let mut state = State::new();
 
     loop {
+        display.clear();
+
+        match state.mode() {
+            Mode::GameIntro => {
+                // draw screen outline
+                Rectangle::new(Point::new(0, 0), Size::new(127, 63))
+                    .into_styled(style)
+                    .draw(&mut display)
+                    .unwrap();
+
+                // draw Small Ball text
+                Text::with_baseline("Small Ball", Point::new(2, 2), text_style, Baseline::Top)
+                    .draw(&mut display)
+                    .unwrap();
+
+                // draw a square
+                Rectangle::new(Point::new(20, 20), Size::new_equal(16))
+                    .into_styled(style)
+                    .draw(&mut display)
+                    .unwrap();
+
+                // draw a circle
+                Circle::new(Point::new(52, 20), 16)
+                    .into_styled(style)
+                    .draw(&mut display)
+                    .unwrap();
+
+                // draw a square
+                Rectangle::new(Point::new(88, 20), Size::new_equal(16))
+                    .into_styled(style)
+                    .draw(&mut display)
+                    .unwrap();
+
+                display.flush().unwrap();
+                delay.delay_ms(3000);
+            }
+            Mode::GamePlay => {
+                // draw the screen outline
+                Rectangle::new(state.screen_outline_top_left(), state.screen_outline_size())
+                    .into_styled(style)
+                    .draw(&mut display)
+                    .unwrap();
+
+                // draw the goals that are alive
+                for goal in state.goals_alive() {
+                    Rectangle::new(goal.location(), Size::new_equal(goal.size()))
+                        .into_styled(style)
+                        .draw(&mut display)
+                        .unwrap();
+                }
+
+                // draw the ball
+                Circle::new(state.ball().location(), state.ball().size())
+                    .into_styled(style)
+                    .draw(&mut display)
+                    .unwrap();
+
+                // draw the score
+                let mut score_text = String::<20>::from("score : ");
+                write!(score_text, "{}", state.score()).unwrap();
+                Text::with_baseline(
+                    score_text.as_str(),
+                    Point::new(0, 0),
+                    text_style,
+                    Baseline::Top,
+                )
+                .draw(&mut display)
+                .unwrap();
+
+                display.flush().unwrap();
+            }
+            Mode::GameOver => {
+                // draw screen outline
+                Rectangle::new(Point::new(0, 0), Size::new(127, 63))
+                    .into_styled(style)
+                    .draw(&mut display)
+                    .unwrap();
+
+                // draw Game Over text
+                Text::with_baseline("Game Over", Point::new(2, 2), text_style, Baseline::Top)
+                    .draw(&mut display)
+                    .unwrap();
+
+                // draw the score
+                let mut score_text = String::<20>::from("score : ");
+                write!(score_text, "{}", state.score()).unwrap();
+                Text::with_baseline(
+                    score_text.as_str(),
+                    Point::new(2, 20),
+                    text_style,
+                    Baseline::Top,
+                )
+                .draw(&mut display)
+                .unwrap();
+
+                // draw the high score
+                let mut score_text = String::<20>::from("low score : ");
+                write!(score_text, "{}", state.low_score()).unwrap();
+                Text::with_baseline(
+                    score_text.as_str(),
+                    Point::new(2, 40),
+                    text_style,
+                    Baseline::Top,
+                )
+                .draw(&mut display)
+                .unwrap();
+
+                display.flush().unwrap();
+                delay.delay_ms(3000);
+            }
+        }
+
+        // blink the LED
         led_pin.set_high().unwrap();
         delay.delay_ms(10);
         led_pin.set_low().unwrap();
         delay.delay_ms(10);
 
+        // get mpu control input for the SmallBall game
         let acc_angles = mpu.get_acc_angles().unwrap();
+        let roll = acc_angles.get(0).unwrap();
+        let pitch = acc_angles.get(1).unwrap();
+        //let acc = mpu.get_acc().unwrap();
+        //let acc_z = acc.get(2).unwrap();
 
-        let mut roll = String::<20>::from("roll:");
-        write!(roll, "{}", acc_angles.get(0).unwrap()).unwrap();
-
-        let mut pitch = String::<20>::from("pitch:");
-        write!(pitch, "{}", acc_angles.get(1).unwrap()).unwrap();
-
-        let acc = mpu.get_acc().unwrap();
-        let mut acc_z = String::<20>::from("acc_z:");
-        write!(acc_z, "{}", acc.get(2).unwrap()).unwrap();
-
-        display.clear();
-
-        Text::with_baseline(roll.as_str(), Point::new(0, 0), text_style, Baseline::Top)
-            .draw(&mut display)
-            .unwrap();
-
-        Text::with_baseline(pitch.as_str(), Point::new(0, 16), text_style, Baseline::Top)
-            .draw(&mut display)
-            .unwrap();
-
-        Text::with_baseline(acc_z.as_str(), Point::new(0, 32), text_style, Baseline::Top)
-            .draw(&mut display)
-            .unwrap();
-
-        display.flush().unwrap();
+        // update the state of the game based on the latest control inputs
+        state.update(pitch, roll);
     }
 }
