@@ -50,11 +50,11 @@ const BALL_SIZE: u32 = 8;
 /// The mode the game is in.
 pub enum Mode {
     /// Introduce the game with a splash screen
-    GameIntro,
+    Intro,
     /// Actively playing the game
-    GamePlay,
+    Play,
     /// The game is over, show the score and the low score
-    GameOver,
+    Over,
 }
 
 /// The Ball is the entity that the user controls on the screen
@@ -136,7 +136,7 @@ impl State {
             low_score: i32::max_value(),
             ball: State::initial_ball(),
             goals: State::initial_goals(),
-            mode: Mode::GameIntro,
+            mode: Mode::Intro,
         }
     }
 
@@ -188,17 +188,17 @@ impl State {
     // Update the game mode.
     fn update_mode(&mut self) {
         match self.mode {
-            Mode::GameIntro => self.mode = Mode::GamePlay,
-            Mode::GamePlay => {
+            Mode::Intro => self.mode = Mode::Play,
+            Mode::Play => {
                 if self.goals.iter().all(|goal| !goal.alive) {
-                    self.mode = Mode::GameOver;
+                    self.mode = Mode::Over;
                     if self.score < self.low_score {
                         self.low_score = self.score;
                     }
                 }
             }
-            Mode::GameOver => {
-                self.mode = Mode::GamePlay;
+            Mode::Over => {
+                self.mode = Mode::Play;
                 self.score = 0;
                 self.ball = State::initial_ball();
                 self.goals = State::initial_goals();

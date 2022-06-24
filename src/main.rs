@@ -123,7 +123,7 @@ fn main() -> ! {
         display.clear();
 
         match state.mode() {
-            Mode::GameIntro => {
+            Mode::Intro => {
                 // draw screen outline
                 Rectangle::new(Point::new(0, 0), Size::new(127, 63))
                     .into_styled(style)
@@ -156,7 +156,7 @@ fn main() -> ! {
                 display.flush().unwrap();
                 delay.delay_ms(3000);
             }
-            Mode::GamePlay => {
+            Mode::Play => {
                 // draw the screen outline
                 Rectangle::new(state.screen_outline_top_left(), state.screen_outline_size())
                     .into_styled(style)
@@ -191,7 +191,7 @@ fn main() -> ! {
 
                 display.flush().unwrap();
             }
-            Mode::GameOver => {
+            Mode::Over => {
                 // draw screen outline
                 Rectangle::new(Point::new(0, 0), Size::new(127, 63))
                     .into_styled(style)
