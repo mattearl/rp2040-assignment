@@ -9,12 +9,18 @@
 #![no_main]
 
 use adafruit_feather_rp2040::XOSC_CRYSTAL_FREQ;
+use config::{
+    DELAY_MS, FULL_SCREEN_OUTLINE_SIZE, FULL_SCREEN_OUTLINE_TOP_LET, GAME_NAME, GAME_NAME_LOCATION,
+    GAME_OVER_LOCATION, GAME_OVER_LOW_SCORE_LOCATION, GAME_OVER_SCORE_LOCATION, GAME_OVER_TEXT,
+    LOW_SCORE_TEXT, SCORE_LOCATION, SCORE_TEXT, SPLASH_SCREEN_SHAPE_LOCATIONS,
+    SPLASH_SCREEN_SHAPE_SIZE,
+};
 use core::fmt::Write;
 use cortex_m_rt::entry;
 use embedded_graphics::pixelcolor::BinaryColor;
 use embedded_graphics::{
     mono_font::{ascii::FONT_6X10, MonoTextStyleBuilder},
-    prelude::{Point, Primitive, Size},
+    prelude::{Primitive, Size},
     primitives::{Circle, PrimitiveStyleBuilder, Rectangle},
     text::{Baseline, Text},
     Drawable,
@@ -32,6 +38,7 @@ use ssd1306::{
     Ssd1306,
 };
 
+mod config;
 mod math;
 mod smallball;
 
@@ -125,36 +132,39 @@ fn main() -> ! {
         match state.mode() {
             Mode::Intro => {
                 // draw screen outline
-                Rectangle::new(Point::new(0, 0), Size::new(127, 63))
+                Rectangle::new(FULL_SCREEN_OUTLINE_TOP_LET, FULL_SCREEN_OUTLINE_SIZE)
                     .into_styled(style)
                     .draw(&mut display)
                     .unwrap();
 
                 // draw Small Ball text
-                Text::with_baseline("Small Ball", Point::new(2, 2), text_style, Baseline::Top)
+                Text::with_baseline(GAME_NAME, GAME_NAME_LOCATION, text_style, Baseline::Top)
                     .draw(&mut display)
                     .unwrap();
 
                 // draw a square
-                Rectangle::new(Point::new(20, 20), Size::new_equal(16))
+                Rectangle::new(SPLASH_SCREEN_SHAPE_LOCATIONS[0], SPLASH_SCREEN_SHAPE_SIZE)
                     .into_styled(style)
                     .draw(&mut display)
                     .unwrap();
 
                 // draw a circle
-                Circle::new(Point::new(52, 20), 16)
-                    .into_styled(style)
-                    .draw(&mut display)
-                    .unwrap();
+                Circle::new(
+                    SPLASH_SCREEN_SHAPE_LOCATIONS[1],
+                    SPLASH_SCREEN_SHAPE_SIZE.width,
+                )
+                .into_styled(style)
+                .draw(&mut display)
+                .unwrap();
 
                 // draw a square
-                Rectangle::new(Point::new(88, 20), Size::new_equal(16))
+                Rectangle::new(SPLASH_SCREEN_SHAPE_LOCATIONS[2], SPLASH_SCREEN_SHAPE_SIZE)
                     .into_styled(style)
                     .draw(&mut display)
                     .unwrap();
 
                 display.flush().unwrap();
-                delay.delay_ms(3000);
+                delay.delay_ms(DELAY_MS);
             }
             Mode::Play => {
                 // draw the screen outline
@@ -178,11 +188,11 @@ fn main() -> ! {
                     .unwrap();
 
                 // draw the score
-                let mut score_text = String::<20>::from("score : ");
+                let mut score_text = String::<20>::from(SCORE_TEXT);
                 write!(score_text, "{}", state.score()).unwrap();
                 Text::with_baseline(
                     score_text.as_str(),
-                    Point::new(0, 0),
+                    SCORE_LOCATION,
                     text_style,
                     Baseline::Top,
                 )
@@ -193,22 +203,27 @@ fn main() -> ! {
             }
             Mode::Over => {
                 // draw screen outline
-                Rectangle::new(Point::new(0, 0), Size::new(127, 63))
+                Rectangle::new(FULL_SCREEN_OUTLINE_TOP_LET, FULL_SCREEN_OUTLINE_SIZE)
                     .into_styled(style)
                     .draw(&mut display)
                     .unwrap();
 
                 // draw Game Over text
-                Text::with_baseline("Game Over", Point::new(2, 2), text_style, Baseline::Top)
-                    .draw(&mut display)
-                    .unwrap();
+                Text::with_baseline(
+                    GAME_OVER_TEXT,
+                    GAME_OVER_LOCATION,
+                    text_style,
+                    Baseline::Top,
+                )
+                .draw(&mut display)
+                .unwrap();
 
                 // draw the score
-                let mut score_text = String::<20>::from("score : ");
+                let mut score_text = String::<20>::from(SCORE_TEXT);
                 write!(score_text, "{}", state.score()).unwrap();
                 Text::with_baseline(
                     score_text.as_str(),
-                    Point::new(2, 20),
+                    GAME_OVER_SCORE_LOCATION,
                     text_style,
                     Baseline::Top,
                 )
@@ -216,11 +231,11 @@ fn main() -> ! {
                 .unwrap();
 
                 // draw the high score
-                let mut score_text = String::<20>::from("low score : ");
+                let mut score_text = String::<20>::from(LOW_SCORE_TEXT);
                 write!(score_text, "{}", state.low_score()).unwrap();
                 Text::with_baseline(
                     score_text.as_str(),
-                    Point::new(2, 40),
+                    GAME_OVER_LOW_SCORE_LOCATION,
                     text_style,
                     Baseline::Top,
                 )
@@ -228,7 +243,7 @@ fn main() -> ! {
                 .unwrap();
 
                 display.flush().unwrap();
-                delay.delay_ms(3000);
+                delay.delay_ms(DELAY_MS);
             }
         }
 
@@ -242,8 +257,6 @@ fn main() -> ! {
         let acc_angles = mpu.get_acc_angles().unwrap();
         let roll = acc_angles.get(0).unwrap();
         let pitch = acc_angles.get(1).unwrap();
-        //let acc = mpu.get_acc().unwrap();
-        //let acc_z = acc.get(2).unwrap();
 
         // update the state of the game based on the latest control inputs
         state.update(pitch, roll);

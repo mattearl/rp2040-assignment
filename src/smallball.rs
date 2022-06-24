@@ -4,48 +4,16 @@
 //! visit all goals on the screen in the minimum amount of time. The game keeps track of the
 //! lowest score achieved.
 //!
-//! The version of SmallBall defined below is configured for a screen of size 128x64 and
-//! relies on user control input from an mpu sensor's pitch and roll measurements.
-//!
 
-use crate::math::intersects;
+use crate::{
+    config::{
+        ANGLE_THRESHOLD, BALL_DELTA, BALL_LOCATION, BALL_SIZE, GOAL_LOCATIONS, GOAL_SIZE,
+        SCREEN_OUTLINE_SIZE, SCREEN_OUTLINE_TOP_LET, X_MAX, X_MIN, Y_MAX, Y_MIN,
+    },
+    math::intersects,
+};
 use embedded_graphics::prelude::{Point, Size};
 use heapless::Vec;
-
-// the boundaries of the game space
-const X_MIN: i32 = 0;
-const X_MAX: i32 = 118;
-const Y_MIN: i32 = 10;
-const Y_MAX: i32 = 56;
-
-// the top left coordinate of the screen outline during game play
-const SCREEN_OUTLINE_TOP_LET: Point = Point::new(0, 9);
-
-// the size of the screen outline during game play
-const SCREEN_OUTLINE_SIZE: Size = Size::new(127, 55);
-
-// the pitch/roll angle threshold, above which the ball is moved in the corresponding direction
-const ANGLE_THRESHOLD: f32 = 0.6;
-
-// the distance the ball moves each loop if pitch/roll angle is above threshold
-const BALL_DELTA: i32 = 2;
-
-// the initial location of each goal
-const GOAL_LOCATIONS: [Point; 4] = [
-    Point::new(10, 10),
-    Point::new(100, 50),
-    Point::new(50, 20),
-    Point::new(10, 50),
-];
-
-// the initial location of the ball
-const BALL_LOCATION: Point = Point::new(88, 20);
-
-/// The size of each goal
-const GOAL_SIZE: u32 = 8;
-
-// The size of the ball
-const BALL_SIZE: u32 = 8;
 
 /// The mode the game is in.
 pub enum Mode {
