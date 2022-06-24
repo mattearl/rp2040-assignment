@@ -50,16 +50,16 @@ and the lowest score achieved. After a short wait the game will start again.
 If you start the system and you see nothing on the display you may have an SSD1306 display with 
 a different I2C address than the address on the SSD1306 that I am using. If so, go to `main.rs` 
 and replace the line
-```
+```rust
 let interface = I2CDisplayInterface::new_alternate_address(bus.acquire_i2c());
 ```
 with this line 
-```
+```rust
 let interface = I2CDisplayInterface::new(bus.acquire_i2c());
 ```
 and try again. If that doesn't work, look up the address in the SSD1306 datasheet and set it 
 manually using the `new_custom_address` function.
-```
+```rust
 let interface = I2CDisplayInterface::new_custom_address(bus.acquire_i2c(), 0x3D);
 ```
  
