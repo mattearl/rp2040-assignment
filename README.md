@@ -13,6 +13,7 @@ on the screen in the minimum amount of time. The game keeps track of the
 lowest score achieved.
 
 ## Running the game on the RP2040 
+
 1.) Prepare the hardware by connecting the display and the IMU to the RP2040 via STEMMA QT cables.
 
 <p align="center"><img src="https://www.dropbox.com/s/m3pdzs1j7k5qpui/PXL_20220624_194844668.MP.jpg?raw=1" alt="system startup" width="600"></p>
@@ -66,6 +67,12 @@ manually using the `new_custom_address` function.
 ```rust
 let interface = I2CDisplayInterface::new_custom_address(bus.acquire_i2c(), 0x3D);
 ```
+
+## Unit Tests
+
+I have not yet figured out the best way to include unit tests in an embedded rust no_std project. 
+For now, I have created a separate [repository](https://github.com/mattearl/smallball) with the
+unit tests.
  
 ## References
 
