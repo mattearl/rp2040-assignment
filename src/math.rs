@@ -48,15 +48,3 @@ fn intersects1d(min1: i32, max1: i32, min2: i32, max2: i32) -> bool {
 fn contains1d(x: i32, min: i32, max: i32) -> bool {
     x >= min && x <= max
 }
-
-/*
-#[cfg(test)]
-mod tests {
-    use super::intersects1d;
-
-    #[test]
-    fn intersects1d_test() {
-        assert!(!intersects1d(10, 20, -10, 0));
-    }
-}
-*/

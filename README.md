@@ -15,6 +15,8 @@ lowest score achieved.
 ## Running the game on the RP2040 
 1.) Prepare the hardware by connecting the display and the IMU to the RP2040 via STEMMA QT cables.
 
+<p align="center"><img src="https://www.dropbox.com/s/m3pdzs1j7k5qpui/PXL_20220624_194844668.MP.jpg?raw=1" alt="system startup" width="600"></p>
+
 2.) Install the RP2040 rust target 
 ```
 rustup target add thumbv6m-none-eabi
@@ -43,7 +45,9 @@ cargo run --release
 7.) You will see the game splash screen. After a short wait the game will start and you can play 
 by rolling and pitching the IMU to move the ball around the screen to visit each goal as quickly
 as possible. Once all goals are reached you will see the game over screen that shows your score
-and the lowest score achieved. After a short wait the game will start again.  
+and the lowest score achieved. After a short wait the game will start again. Here is a
+[video](https://www.dropbox.com/s/spphcini2hiejfz/PXL_20220624_201321347~2.mp4?raw=1)
+of game play.
 
 ## Troubleshooting
 
