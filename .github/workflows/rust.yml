@@ -22,7 +22,7 @@ jobs:
         rustup component add clippy
         cargo clippy --no-deps -- -D warnings
     - name: tests
-      run: cargo test --verbose --package smallball --target $(rustc -vV | sed -n "s|host: ||p") 
+      run: 'cargo test --verbose --package smallball --target $(rustc -vV | sed -n "s|host: ||p")' 
 
   coverage:
     name: Code Coverage
@@ -33,4 +33,4 @@ jobs:
         with:
           crate: cargo-tarpaulin
           version: latest
-      - run: cargo tarpaulin --packages smallball --target $(rustc -vV | sed -n "s|host: ||p") --ignore-tests --fail-under 100 
+      - run: 'cargo tarpaulin --packages smallball --target $(rustc -vV | sed -n "s|host: ||p") --ignore-tests --fail-under 100'
