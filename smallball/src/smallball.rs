@@ -16,6 +16,7 @@ use embedded_graphics::prelude::{Point, Size};
 use heapless::Vec;
 
 /// The mode the game is in.
+#[cfg_attr(test, derive(Debug, PartialEq))]
 pub enum Mode {
     /// Introduce the game with a splash screen
     Intro,
@@ -27,6 +28,7 @@ pub enum Mode {
 
 /// The Ball is the entity that the user controls on the screen
 /// trying to visit goals as quickly as possible.
+#[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct Ball {
     /// the current location of this ball
     location: Point,
@@ -245,5 +247,197 @@ impl State {
             }
         }
         goals_alive
+    }
+}
+
+impl Default for State {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::State;
+    use crate::{
+        config::{ANGLE_THRESHOLD, BALL_DELTA, SCREEN_OUTLINE_SIZE, SCREEN_OUTLINE_TOP_LET},
+        smallball::Mode,
+    };
+    use embedded_graphics::prelude::Point;
+
+    #[test]
+    fn transition_from_intro_to_play_test() {
+        // GIVEN game state in intro mode
+        let mut state = State::new();
+        assert_eq!(*state.mode(), Mode::Intro);
+        // WHEN update is called
+        state.update(&0.0, &0.0);
+        // THEN game transitions to play mode
+        assert_eq!(*state.mode(), Mode::Play);
+    }
+
+    #[test]
+    fn transition_from_play_to_over_test() {
+        // GIVEN game state in play mode
+        let mut state = game_state_in_play_mode();
+
+        // GIVEN all goals dead
+        for goal in state.goals.iter_mut() {
+            goal.alive = false;
+        }
+
+        // WHEN update is called
+        state.update(&0.0, &0.0);
+
+        // THEN game transitions to over mode and the low score is updated
+        assert_eq!(*state.mode(), Mode::Over);
+        assert_eq!(state.low_score(), 2);
+    }
+
+    #[test]
+    fn transition_from_over_to_play_test() {
+        // GIVEN game state in over mode
+        let mut state = game_state_in_play_mode();
+        for goal in state.goals.iter_mut() {
+            goal.alive = false;
+        }
+        state.update(&0.0, &0.0);
+        assert_eq!(*state.mode(), Mode::Over);
+
+        // WHEN update is called
+        state.update(&0.0, &0.0);
+
+        // THEN game transitions to play mode
+        assert_eq!(*state.mode(), Mode::Play);
+    }
+
+    #[test]
+    fn ball_moves_right_test() {
+        // GIVEN game state in play mode
+        let mut state = game_state_in_play_mode();
+
+        // WHEN the roll is positive and above threshold
+        state.update(&0.0, &(ANGLE_THRESHOLD + 0.1));
+
+        // THEN the ball moves to the right
+        assert_eq!(state.ball().location(), ball_location_delta(BALL_DELTA, 0));
+    }
+
+    #[test]
+    fn ball_moves_left_test() {
+        // GIVEN game state in play mode
+        let mut state = game_state_in_play_mode();
+
+        // WHEN the roll is negative and above threshold
+        state.update(&0.0, &-(ANGLE_THRESHOLD + 0.1));
+
+        // THEN the ball moves to the left
+        assert_eq!(state.ball().location(), ball_location_delta(-BALL_DELTA, 0));
+    }
+
+    #[test]
+    fn ball_moves_up_test() {
+        // GIVEN game state in play mode
+        let mut state = game_state_in_play_mode();
+
+        // WHEN the pitch is positive and above threshold
+        state.update(&(ANGLE_THRESHOLD + 0.1), &0.0);
+
+        // THEN the ball moves to up
+        assert_eq!(state.ball().location(), ball_location_delta(0, -BALL_DELTA));
+    }
+
+    #[test]
+    fn ball_moves_down_test() {
+        // GIVEN game state in play mode
+        let mut state = game_state_in_play_mode();
+
+        // WHEN the pitch is negative and above threshold
+        state.update(&-(ANGLE_THRESHOLD + 0.1), &0.0);
+
+        // THEN the ball moves to down
+        assert_eq!(state.ball().location(), ball_location_delta(0, BALL_DELTA));
+    }
+
+    #[test]
+    fn ball_moves_diagonally_test() {
+        // GIVEN game state in play mode
+        let mut state = game_state_in_play_mode();
+
+        // WHEN the pitch and roll are both positive and above threshold
+        state.update(&(ANGLE_THRESHOLD + 0.1), &(ANGLE_THRESHOLD + 0.1));
+
+        // THEN the ball moves to diagonally
+        assert_eq!(
+            state.ball().location(),
+            ball_location_delta(BALL_DELTA, -BALL_DELTA)
+        );
+    }
+
+    #[test]
+    fn ball_stays_put_test() {
+        // GIVEN game state in play mode
+        let mut state = game_state_in_play_mode();
+
+        // WHEN the pitch and roll are both positive and below threshold
+        state.update(&(ANGLE_THRESHOLD - 0.1), &(ANGLE_THRESHOLD - 0.1));
+
+        // THEN the ball stays put
+        assert_eq!(state.ball().location(), State::initial_ball().location());
+    }
+
+    #[test]
+    fn ball_visits_goal_test() {
+        // GIVEN game state in play mode with first goal alive
+        let mut state = game_state_in_play_mode();
+        assert!(state.goals[0].alive);
+        assert_eq!(state.goals_alive().len(), State::initial_goals().len());
+
+        // WHEN the ball moves to visit the goal
+        state.ball.location = State::initial_goals()[0].location();
+        state.update(&0.0, &0.0);
+
+        // THEN the goal is dead
+        assert!(!state.goals[0].alive);
+        assert_eq!(state.goals_alive().len(), State::initial_goals().len() - 1);
+    }
+
+    #[test]
+    fn update_score_test() {
+        // GIVEN game state in play mode
+        let mut state = game_state_in_play_mode();
+        assert_eq!(state.score(), 1);
+        // WHEN update is called
+        state.update(&0.0, &0.0);
+        // THEN the score increments
+        assert_eq!(state.score(), 2);
+        // WHEN update is called
+        state.update(&0.0, &0.0);
+        // THEN the score increments
+        assert_eq!(state.score(), 3);
+    }
+
+    #[test]
+    fn screen_outline_test() {
+        let state = game_state_in_play_mode();
+        assert_eq!(state.screen_outline_top_left(), SCREEN_OUTLINE_TOP_LET);
+        assert_eq!(state.screen_outline_size(), SCREEN_OUTLINE_SIZE);
+    }
+
+    fn ball_location_delta(delta_x: i32, delta_y: i32) -> Point {
+        Point::new(
+            State::initial_ball().location.x + delta_x,
+            State::initial_ball().location.y + delta_y,
+        )
+    }
+
+    fn game_state_in_play_mode() -> State {
+        let mut state = State::default();
+        assert_eq!(state.score(), 0);
+        assert_eq!(*state.mode(), Mode::Intro);
+        state.update(&0.0, &0.0);
+        assert_eq!(*state.ball(), State::initial_ball());
+        assert_eq!(state.score(), 1);
+        state
     }
 }

@@ -1,0 +1,8 @@
+[package]
+name = "smallball"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+embedded-graphics = "0.7.1"
+heapless = "0.7.14"

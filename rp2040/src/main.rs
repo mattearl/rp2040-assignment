@@ -9,12 +9,6 @@
 #![no_main]
 
 use adafruit_feather_rp2040::XOSC_CRYSTAL_FREQ;
-use config::{
-    DELAY_MS, FULL_SCREEN_OUTLINE_SIZE, FULL_SCREEN_OUTLINE_TOP_LET, GAME_NAME, GAME_NAME_LOCATION,
-    GAME_OVER_LOCATION, GAME_OVER_LOW_SCORE_LOCATION, GAME_OVER_SCORE_LOCATION, GAME_OVER_TEXT,
-    LOW_SCORE_TEXT, SCORE_LOCATION, SCORE_TEXT, SPLASH_SCREEN_SHAPE_LOCATIONS,
-    SPLASH_SCREEN_SHAPE_SIZE,
-};
 use core::fmt::Write;
 use cortex_m_rt::entry;
 use embedded_graphics::pixelcolor::BinaryColor;
@@ -32,15 +26,17 @@ use heapless::String;
 use mpu6050::Mpu6050;
 use panic_halt as _;
 use rp2040_hal as hal;
-use smallball::{Mode, State};
+use smallball::config::{
+    DELAY_MS, FULL_SCREEN_OUTLINE_SIZE, FULL_SCREEN_OUTLINE_TOP_LET, GAME_NAME, GAME_NAME_LOCATION,
+    GAME_OVER_LOCATION, GAME_OVER_LOW_SCORE_LOCATION, GAME_OVER_SCORE_LOCATION, GAME_OVER_TEXT,
+    LOW_SCORE_TEXT, SCORE_LOCATION, SCORE_TEXT, SPLASH_SCREEN_SHAPE_LOCATIONS,
+    SPLASH_SCREEN_SHAPE_SIZE,
+};
+use smallball::smallball::{Mode, State};
 use ssd1306::{
     mode::DisplayConfig, rotation::DisplayRotation, size::DisplaySize128x64, I2CDisplayInterface,
     Ssd1306,
 };
-
-mod config;
-mod math;
-mod smallball;
 
 #[entry]
 fn main() -> ! {

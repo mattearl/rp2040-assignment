@@ -50,6 +50,18 @@ and the lowest score achieved. After a short wait the game will start again. Her
 [video](https://www.dropbox.com/s/spphcini2hiejfz/PXL_20220624_201321347~2.mp4?raw=1)
 of game play.
 
+## Unit Tests
+
+```sh
+cargo test --package smallball --target $(rustc -vV | sed -n "s|host: ||p")
+```
+
+## Coverage
+
+```sh
+cargo tarpaulin --packages smallball --target $(rustc -vV | sed -n "s|host: ||p") --ignore-tests --fail-under 100
+``` 
+
 ## Troubleshooting
 
 If you start the system and you see nothing on the display you may have an SSD1306 display with 
@@ -68,12 +80,6 @@ manually using the `new_custom_address` function.
 let interface = I2CDisplayInterface::new_custom_address(bus.acquire_i2c(), 0x3D);
 ```
 
-## Unit Tests
-
-I have not yet figured out the best way to include unit tests in an embedded rust no_std project. 
-For now, I have created a separate [repository](https://github.com/mattearl/smallball) with the
-unit tests.
- 
 ## References
 
 - [adafruit-feather-rp2040 hal](https://crates.io/crates/adafruit-feather-rp2040)
@@ -82,5 +88,3 @@ unit tests.
 - [MPU6050 6-axis IMU driver](https://crates.io/crates/mpu6050)
 - [shared-bus](https://crates.io/crates/shared-bus)
 - [heapless](https://crates.io/crates/heapless)
-
-
